@@ -191,7 +191,7 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
                     .embed(
                         CreateEmbed::new()
                             .title("Cooldown hit")
-                            .description(format!("*Whooaa maaan... going a little fast there duuude... you should really **cool down** some... for like, **~{} seconds**...*", remaining_cooldown.as_secs()))
+                            .description(format!("You must wait **~{} seconds** before you can use this command again.", remaining_cooldown.as_secs()))
                             .color(WARNING),
                     )
                     .reply(true)

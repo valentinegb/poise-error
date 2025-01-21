@@ -1,6 +1,10 @@
+//! An opinionated plug-and-play library for error handling in Discord bots made
+//! with [poise].
+//!
+//! To get started, see [on_error].
+
 use std::{convert::Infallible, str::FromStr};
 
-use anyhow::anyhow;
 use poise::{
     serenity_prelude::{
         colours::css::{DANGER, WARNING},
@@ -11,15 +15,36 @@ use poise::{
 use thiserror::Error;
 use tracing::{error, warn};
 
-pub type Error = anyhow::Error;
+pub use anyhow;
 
+/// An anticipated error made by a user.
+///
+/// Returning *this* error from a command instead of only [anyhow::Error] will
+/// present the user with an embed stating that *they* have made an error as
+/// opposed to the bot having made an error.
+///
+/// # Examples
+///
+/// ```
+/// use std::str::FromStr;
+///
+/// use poise_error::{
+///     anyhow::{bail, Error},
+///     UserError,
+/// };
+///
+/// #[poise::command(prefix_command, slash_command)]
+/// async fn command(ctx: poise::Context<'_, (), Error>) -> Result<(), Error> {
+///     bail!(UserError::from_str("You stink!").unwrap())
+/// }
+/// ```
 #[derive(Error, Debug)]
 #[error(transparent)]
-pub struct UserError(#[from] pub Error);
+pub struct UserError(#[from] pub anyhow::Error);
 
 impl From<String> for UserError {
     fn from(value: String) -> Self {
-        UserError(anyhow!(value))
+        UserError(anyhow::anyhow!(value))
     }
 }
 
@@ -31,7 +56,9 @@ impl FromStr for UserError {
     }
 }
 
-async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), Error> {
+async fn try_handle_error<U>(
+    error: FrameworkError<'_, U, anyhow::Error>,
+) -> Result<(), anyhow::Error> {
     const MAYBE_BOT_ERROR: &str =
         "If you believe this is an error on the bot's end, please contact a developer.";
     const BOT_ERROR: &str =
@@ -388,7 +415,27 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
     Ok(())
 }
 
-pub fn on_error<U>(error: FrameworkError<'_, U, Error>) -> BoxFuture<'_, ()>
+/// Plug this into your [poise::FrameworkOptions] to let `poise_error` handle
+/// your bot's errors.
+///
+/// [anyhow::Error] is the error type expected to be returned from commands.
+///
+/// # Examples
+///
+/// ```
+/// use poise_error::on_error;
+///
+/// let framework = poise::Framework::builder()
+///     .options(poise::FrameworkOptions {
+///         on_error,
+///         ..Default::default()
+///     })
+/// #     .setup(|ctx, _ready, framework| {
+/// #         Box::pin(async move { Ok(()) })
+/// #     })
+///     .build();
+/// ```
+pub fn on_error<U>(error: FrameworkError<'_, U, anyhow::Error>) -> BoxFuture<'_, ()>
 where
     U: Send + Sync,
 {

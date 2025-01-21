@@ -1,7 +1,11 @@
 [package]
 name = "poise_error"
 version = "1.0.0"
+authors = ["Valentine Briese <valentinegb@icloud.com>"]
 edition = "2021"
+description = "An opinionated plug-and-play library for error handling in Discord bots made with poise."
+repository = "https://github.com/valentinegb/poise-error"
+license = "MIT"
 
 [dependencies]
 anyhow = "1"

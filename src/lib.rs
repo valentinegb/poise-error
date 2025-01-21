@@ -1,4 +1,4 @@
-use std::{cell::LazyCell, convert::Infallible, str::FromStr};
+use std::{convert::Infallible, str::FromStr};
 
 use anyhow::anyhow;
 use poise::{
@@ -32,16 +32,10 @@ impl FromStr for UserError {
 }
 
 async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), Error> {
-    const MAYBE_BOT_ERROR: LazyCell<CreateEmbedFooter> = LazyCell::new(|| {
-        CreateEmbedFooter::new(
-            "If you believe this is an error on the bot's end, please contact a developer.",
-        )
-    });
-    const BOT_ERROR: LazyCell<CreateEmbedFooter> = LazyCell::new(|| {
-        CreateEmbedFooter::new(
-            "This isn't supposed to happen! If you have the time, please contact a developer.",
-        )
-    });
+    const MAYBE_BOT_ERROR: &str =
+        "If you believe this is an error on the bot's end, please contact a developer.";
+    const BOT_ERROR: &str =
+        "This isn't supposed to happen! If you have the time, please contact a developer.";
 
     match error {
         FrameworkError::Setup { error, .. } => error!("Failed to complete setup: {error:#}"),
@@ -61,7 +55,7 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
                             CreateEmbed::new()
                                 .title("You seem to have made an error")
                                 .description(description)
-                                .footer(MAYBE_BOT_ERROR.to_owned())
+                                .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
                                 .color(WARNING),
                         )
                         .reply(true)
@@ -76,7 +70,7 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
                             CreateEmbed::new()
                                 .title("An internal error has occurred")
                                 .description(description)
-                                .footer(BOT_ERROR.to_owned())
+                                .footer(CreateEmbedFooter::new(BOT_ERROR))
                                 .color(DANGER),
                         )
                         .reply(true)
@@ -151,7 +145,7 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
                         CreateEmbed::new()
                             .title("Failed to parse argument")
                             .description(description)
-                            .footer(MAYBE_BOT_ERROR.to_owned())
+                            .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
                             .color(WARNING),
                     )
                     .reply(true)
@@ -172,7 +166,7 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
                         CreateEmbed::new()
                             .title("Command structure mismatch")
                             .description(format!("```\n{description}\n```"))
-                            .footer(BOT_ERROR.to_owned())
+                            .footer(CreateEmbedFooter::new(BOT_ERROR))
                             .color(DANGER),
                     )
                     .reply(true)
@@ -344,7 +338,7 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
                             CreateEmbed::new()
                                 .title("Check failed")
                                 .description(format!("```\n{error:?}\n```"))
-                                .footer(MAYBE_BOT_ERROR.to_owned())
+                                .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
                                 .color(WARNING),
                         )
                         .reply(true)
@@ -360,7 +354,7 @@ async fn try_handle_error<U>(error: FrameworkError<'_, U, Error>) -> Result<(), 
                             CreateEmbed::new()
                                 .title("Check failed")
                                 .description("That's all I know. ¯\\\\_(ツ)_/¯")
-                                .footer(MAYBE_BOT_ERROR.to_owned())
+                                .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
                                 .color(WARNING),
                         )
                         .reply(true)

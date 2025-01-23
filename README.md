@@ -23,9 +23,9 @@ See the [docs] for more information.
 
 [Goober Bot] is a Discord bot which uses `poise_error`, here's how it looks:
 
-<!-- errors screenshot -->
+![Screenshot 2025-01-22 at 6 23 00 PM](https://github.com/user-attachments/assets/aef54d4b-8cde-4d96-aa06-434598fe1326)
 
-<!-- logs screenshot -->
+![Screenshot 2025-01-22 at 6 24 01 PM](https://github.com/user-attachments/assets/bc4cc74a-9a9b-4d2d-ac5f-e7a5f18d9a02)
 
 ```rust
 /// Fails intentionally

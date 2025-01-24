@@ -387,15 +387,15 @@ async fn try_handle_error<U>(
         }
         FrameworkError::CommandCheckFailed { error, ctx, .. } => match error {
             Some(error) => {
-                warn!("Check failed for {:?}: {error:#}", ctx.invocation_string());
+                error!("Check errored for {:?}: {error:#}", ctx.invocation_string());
                 ctx.send(
                     CreateReply::default()
                         .embed(
                             CreateEmbed::new()
-                                .title("Check failed")
+                                .title("Failed to perform check")
                                 .description(format!("```\n{error:?}\n```"))
-                                .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
-                                .color(WARNING),
+                                .footer(CreateEmbedFooter::new(BOT_ERROR))
+                                .color(DANGER),
                         )
                         .reply(true)
                         .ephemeral(true),
@@ -404,19 +404,6 @@ async fn try_handle_error<U>(
             }
             None => {
                 warn!("Check failed for {:?}", ctx.invocation_string());
-                ctx.send(
-                    CreateReply::default()
-                        .embed(
-                            CreateEmbed::new()
-                                .title("Check failed")
-                                .description("That's all I know. ¯\\\\_(ツ)_/¯")
-                                .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
-                                .color(WARNING),
-                        )
-                        .reply(true)
-                        .ephemeral(true),
-                )
-                .await?;
             }
         },
         FrameworkError::DynamicPrefix { error, msg, .. } => {

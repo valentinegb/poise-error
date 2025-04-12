@@ -85,6 +85,25 @@ impl FromStr for UserError {
     }
 }
 
+/// Removes duplicates from an error's chain.
+///
+/// This function does not retain any error types; all errors in a chain will
+/// be turned into strings.
+fn dedup_error_chain(error: &mut anyhow::Error) {
+    let mut chain: Vec<String> = error.chain().map(|err| err.to_string()).collect();
+
+    chain.dedup();
+
+    let mut chain = chain.into_iter().rev();
+    let mut deduped_error = anyhow::anyhow!(chain.next().unwrap());
+
+    for message in chain {
+        deduped_error = deduped_error.context(message);
+    }
+
+    *error = deduped_error;
+}
+
 async fn try_handle_error<U>(
     error: FrameworkError<'_, U, anyhow::Error>,
 ) -> Result<(), anyhow::Error> {
@@ -94,16 +113,25 @@ async fn try_handle_error<U>(
         "This isn't supposed to happen! If you have the time, please contact a developer.";
 
     match error {
-        FrameworkError::Setup { error, .. } => error!("Failed to complete setup: {error:#}"),
-        FrameworkError::EventHandler { error, event, .. } => error!(
-            "Failed to handle event {:?}: {error:#}",
-            event.snake_case_name(),
-        ),
-        FrameworkError::Command { error, ctx, .. } => {
+        FrameworkError::Setup { mut error, .. } => {
+            dedup_error_chain(&mut error);
+            error!("Failed to complete setup: {error:#}");
+        }
+        FrameworkError::EventHandler {
+            mut error, event, ..
+        } => {
+            dedup_error_chain(&mut error);
+            error!(
+                "Failed to handle event {:?}: {error:#}",
+                event.snake_case_name(),
+            );
+        }
+        FrameworkError::Command { mut error, ctx, .. } => {
             let invocation_string = ctx.invocation_string();
             let description = format!("```\n{error:?}\n```");
 
             if error.is::<UserError>() {
+                dedup_error_chain(&mut error);
                 warn!("User made an error when invoking {invocation_string:?}: {error:#}");
                 ctx.send(
                     CreateReply::default()
@@ -119,6 +147,7 @@ async fn try_handle_error<U>(
                 )
                 .await?;
             } else {
+                dedup_error_chain(&mut error);
                 error!("An error occurred whilst executing {invocation_string:?}: {error:#}");
                 ctx.send(
                     CreateReply::default()
@@ -386,7 +415,8 @@ async fn try_handle_error<U>(
             .await?;
         }
         FrameworkError::CommandCheckFailed { error, ctx, .. } => match error {
-            Some(error) => {
+            Some(mut error) => {
+                dedup_error_chain(&mut error);
                 error!("Check errored for {:?}: {error:#}", ctx.invocation_string());
                 ctx.send(
                     CreateReply::default()
@@ -406,7 +436,8 @@ async fn try_handle_error<U>(
                 warn!("Check failed for {:?}", ctx.invocation_string());
             }
         },
-        FrameworkError::DynamicPrefix { error, msg, .. } => {
+        FrameworkError::DynamicPrefix { mut error, msg, .. } => {
+            dedup_error_chain(&mut error);
             error!("Dynamic prefix failed for {msg:?}: {error:#}");
         }
         FrameworkError::UnknownCommand {
@@ -456,7 +487,8 @@ where
     U: Send + Sync,
 {
     Box::pin(async move {
-        if let Err(err) = try_handle_error(error).await {
+        if let Err(mut err) = try_handle_error(error).await {
+            dedup_error_chain(&mut err);
             error!("Failed to handle error: {err:#}");
         }
     })

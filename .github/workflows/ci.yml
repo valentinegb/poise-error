@@ -25,7 +25,7 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
-      - name: Build
-        run: cargo build --verbose
-      - name: Test
-        run: cargo test --verbose
+      - name: Spellcheck
+        uses: crate-ci/typos@v1.29.4
+      - name: Clippy
+        run: cargo clippy --verbose

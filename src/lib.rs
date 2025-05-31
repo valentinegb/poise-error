@@ -175,7 +175,7 @@ pub fn dedup_error_chain(error: &mut anyhow::Error) {
 ///     })
 ///     .build();
 /// ```
-pub async fn try_handle_error<U>(
+pub async fn try_handle_error<U: Send + Sync + 'static>(
     error: FrameworkError<'_, U, anyhow::Error>,
 ) -> Result<(), anyhow::Error> {
     const MAYBE_BOT_ERROR: &str =
@@ -184,19 +184,6 @@ pub async fn try_handle_error<U>(
         "This isn't supposed to happen! If you have the time, please contact a developer.";
 
     match error {
-        FrameworkError::Setup { mut error, .. } => {
-            dedup_error_chain(&mut error);
-            error!("Failed to complete setup: {error:#}");
-        }
-        FrameworkError::EventHandler {
-            mut error, event, ..
-        } => {
-            dedup_error_chain(&mut error);
-            error!(
-                "Failed to handle event {:?}: {error:#}",
-                event.snake_case_name(),
-            );
-        }
         FrameworkError::Command { mut error, ctx, .. } => {
             let invocation_string = ctx.invocation_string();
             let description = format!("```\n{error:?}\n```");
@@ -253,7 +240,8 @@ pub async fn try_handle_error<U>(
                                     .subcommands
                                     .iter()
                                     .map(|subcommand| {
-                                        if prefix == ctx.framework().bot_id.mention().to_string() {
+                                        if prefix == ctx.framework().bot_id().mention().to_string()
+                                        {
                                             format!("- {prefix} `{}`", subcommand.qualified_name)
                                         } else {
                                             format!("- `{prefix}{}`", subcommand.qualified_name)
@@ -513,7 +501,7 @@ pub async fn try_handle_error<U>(
         },
         FrameworkError::DynamicPrefix { mut error, msg, .. } => {
             dedup_error_chain(&mut error);
-            error!("Dynamic prefix failed for {msg:?}: {error:#}");
+            error!("Dynamic prefix failed for a message: {error:#}\n{msg:#?}");
         }
         FrameworkError::UnknownCommand {
             prefix,
@@ -527,6 +515,31 @@ pub async fn try_handle_error<U>(
                 "Received interaction for an unknown command: {:?}",
                 interaction.data.name,
             );
+        }
+        FrameworkError::PermissionFetchFailed { ctx, .. } => {
+            error!("Failed to fetch permissions");
+            ctx.send(
+                CreateReply::default()
+                    .embed(
+                        CreateEmbed::new()
+                            .title("Failed to fetch permissions")
+                            .description("The bot attempted to fetch permissions for you or for the bot, but failed to do so.")
+                            .footer(CreateEmbedFooter::new(BOT_ERROR))
+                            .color(DANGER),
+                    )
+                    .reply(true)
+                    .ephemeral(true),
+            )
+            .await?;
+        }
+        FrameworkError::NonCommandMessage {
+            mut error,
+            framework: _,
+            msg,
+            ..
+        } => {
+            dedup_error_chain(&mut error);
+            error!("An error occurred in the non-command message callback: {error:#}\n{msg:#?}");
         }
         other => {
             warn!(
@@ -563,7 +576,7 @@ pub async fn try_handle_error<U>(
 /// ```
 pub fn on_error<U>(error: FrameworkError<'_, U, anyhow::Error>) -> BoxFuture<'_, ()>
 where
-    U: Send + Sync,
+    U: Send + Sync + 'static,
 {
     Box::pin(async move {
         if let Err(mut err) = try_handle_error(error).await {

@@ -175,7 +175,7 @@ pub fn dedup_error_chain(error: &mut anyhow::Error) {
 ///     })
 ///     .build();
 /// ```
-pub async fn try_handle_error<U>(
+pub async fn try_handle_error<U: Send + Sync + 'static>(
     error: FrameworkError<'_, U, anyhow::Error>,
 ) -> Result<(), anyhow::Error> {
     const MAYBE_BOT_ERROR: &str =
@@ -184,19 +184,6 @@ pub async fn try_handle_error<U>(
         "This isn't supposed to happen! If you have the time, please contact a developer.";
 
     match error {
-        FrameworkError::Setup { mut error, .. } => {
-            dedup_error_chain(&mut error);
-            error!("Failed to complete setup: {error:#}");
-        }
-        FrameworkError::EventHandler {
-            mut error, event, ..
-        } => {
-            dedup_error_chain(&mut error);
-            error!(
-                "Failed to handle event {:?}: {error:#}",
-                event.snake_case_name(),
-            );
-        }
         FrameworkError::Command { mut error, ctx, .. } => {
             let invocation_string = ctx.invocation_string();
             let is_user_error = error.is::<UserError>();
@@ -596,7 +583,7 @@ pub async fn try_handle_error<U>(
 /// ```
 pub fn on_error<U>(error: FrameworkError<'_, U, anyhow::Error>) -> BoxFuture<'_, ()>
 where
-    U: Send + Sync,
+    U: Send + Sync + 'static,
 {
     Box::pin(async move {
         if let Err(mut err) = try_handle_error(error).await {

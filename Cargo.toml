@@ -9,8 +9,8 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1"
-poise = { version = "0", default-features = false }
-serenity = { version = "0", default-features = false, optional = true }
+poise = { git = "https://github.com/serenity-rs/poise", branch = "serenity-next", default-features = false, features = ["cache"] }
+serenity = { git = "https://github.com/serenity-rs/serenity", branch = "next", default-features = false, optional = true }
 thiserror = "2"
 tracing = { version = "0", default-features = false, features = ["std"] }
 

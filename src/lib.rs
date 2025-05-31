@@ -35,11 +35,11 @@
 use std::{convert::Infallible, str::FromStr};
 
 use poise::{
-    serenity_prelude::{
-        colours::css::{DANGER, WARNING},
-        CreateEmbed, CreateEmbedFooter, Mentionable,
-    },
     BoxFuture, CreateReply, FrameworkError,
+    serenity_prelude::{
+        CreateEmbed, CreateEmbedFooter, Mentionable,
+        colours::css::{DANGER, WARNING},
+    },
 };
 use thiserror::Error;
 use tracing::{error, warn};
@@ -104,7 +104,7 @@ fn dedup_error_chain(error: &mut anyhow::Error) {
     *error = deduped_error;
 }
 
-async fn try_handle_error<U>(
+async fn try_handle_error<U: Send + Sync + 'static>(
     error: FrameworkError<'_, U, anyhow::Error>,
 ) -> Result<(), anyhow::Error> {
     const MAYBE_BOT_ERROR: &str =
@@ -113,19 +113,6 @@ async fn try_handle_error<U>(
         "This isn't supposed to happen! If you have the time, please contact a developer.";
 
     match error {
-        FrameworkError::Setup { mut error, .. } => {
-            dedup_error_chain(&mut error);
-            error!("Failed to complete setup: {error:#}");
-        }
-        FrameworkError::EventHandler {
-            mut error, event, ..
-        } => {
-            dedup_error_chain(&mut error);
-            error!(
-                "Failed to handle event {:?}: {error:#}",
-                event.snake_case_name(),
-            );
-        }
         FrameworkError::Command { mut error, ctx, .. } => {
             let invocation_string = ctx.invocation_string();
             let description = format!("```\n{error:?}\n```");
@@ -165,7 +152,10 @@ async fn try_handle_error<U>(
             }
         }
         FrameworkError::SubcommandRequired { ctx } => {
-            warn!("User attempted to invoke a command, which requires a subcommand, without a subcommand: {:?}", ctx.invocation_string());
+            warn!(
+                "User attempted to invoke a command, which requires a subcommand, without a subcommand: {:?}",
+                ctx.invocation_string(),
+            );
 
             let prefix = ctx.prefix();
 
@@ -180,7 +170,8 @@ async fn try_handle_error<U>(
                                     .subcommands
                                     .iter()
                                     .map(|subcommand| {
-                                        if prefix == ctx.framework().bot_id.mention().to_string() {
+                                        if prefix == ctx.framework().bot_id().mention().to_string()
+                                        {
                                             format!("- {prefix} `{}`", subcommand.qualified_name)
                                         } else {
                                             format!("- `{prefix}{}`", subcommand.qualified_name)
@@ -216,7 +207,9 @@ async fn try_handle_error<U>(
             let invocation_string = ctx.invocation_string();
             let description = match input {
                 Some(input) => {
-                    format!("Failed to parse {input:?} from {invocation_string:?} into an argument: {error}")
+                    format!(
+                        "Failed to parse {input:?} from {invocation_string:?} into an argument: {error}",
+                    )
                 }
                 None => {
                     format!("Failed to parse an argument from {invocation_string:?}: {error}")
@@ -438,7 +431,7 @@ async fn try_handle_error<U>(
         },
         FrameworkError::DynamicPrefix { mut error, msg, .. } => {
             dedup_error_chain(&mut error);
-            error!("Dynamic prefix failed for {msg:?}: {error:#}");
+            error!("Dynamic prefix failed for a message: {error:#}\n{msg:#?}");
         }
         FrameworkError::UnknownCommand {
             prefix,
@@ -453,8 +446,35 @@ async fn try_handle_error<U>(
                 interaction.data.name,
             );
         }
+        FrameworkError::PermissionFetchFailed { ctx, .. } => {
+            error!("Failed to fetch permissions");
+            ctx.send(
+                CreateReply::default()
+                    .embed(
+                        CreateEmbed::new()
+                            .title("Failed to fetch permissions")
+                            .description("The bot attempted to fetch permissions for you or for the bot, but failed to do so.")
+                            .footer(CreateEmbedFooter::new(BOT_ERROR))
+                            .color(DANGER),
+                    )
+                    .reply(true)
+                    .ephemeral(true),
+            )
+            .await?;
+        }
+        FrameworkError::NonCommandMessage {
+            mut error,
+            framework: _,
+            msg,
+            ..
+        } => {
+            dedup_error_chain(&mut error);
+            error!("An error occurred in the non-command message callback: {error:#}\n{msg:#?}");
+        }
         other => {
-            warn!("Not prepared to handle unfamiliar kind of error, falling back to default `on_error` function");
+            warn!(
+                "Not prepared to handle unfamiliar kind of error, falling back to default `on_error` function"
+            );
             poise::builtins::on_error(other).await?;
         }
     }
@@ -484,7 +504,7 @@ async fn try_handle_error<U>(
 /// ```
 pub fn on_error<U>(error: FrameworkError<'_, U, anyhow::Error>) -> BoxFuture<'_, ()>
 where
-    U: Send + Sync,
+    U: Send + Sync + 'static,
 {
     Box::pin(async move {
         if let Err(mut err) = try_handle_error(error).await {

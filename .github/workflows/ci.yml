@@ -29,3 +29,5 @@ jobs:
         uses: crate-ci/typos@v1.29.4
       - name: Clippy
         run: cargo clippy --verbose
+      - name: Test
+        run: cargo test --verbose

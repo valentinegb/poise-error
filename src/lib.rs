@@ -48,11 +48,11 @@
 use std::{convert::Infallible, str::FromStr};
 
 use poise::{
-    serenity_prelude::{
-        colours::css::{DANGER, WARNING},
-        CreateEmbed, CreateEmbedFooter, Mentionable,
-    },
     BoxFuture, CreateReply, FrameworkError,
+    serenity_prelude::{
+        CreateEmbed, CreateEmbedFooter, Mentionable,
+        colours::css::{DANGER, WARNING},
+    },
 };
 use thiserror::Error;
 use tracing::{error, warn};
@@ -185,7 +185,10 @@ async fn try_handle_error<U>(
             }
         }
         FrameworkError::SubcommandRequired { ctx } => {
-            warn!("User attempted to invoke a command, which requires a subcommand, without a subcommand: {:?}", ctx.invocation_string());
+            warn!(
+                "User attempted to invoke a command, which requires a subcommand, without a subcommand: {:?}",
+                ctx.invocation_string(),
+            );
 
             let prefix = ctx.prefix();
 
@@ -236,7 +239,9 @@ async fn try_handle_error<U>(
             let invocation_string = ctx.invocation_string();
             let description = match input {
                 Some(input) => {
-                    format!("Failed to parse {input:?} from {invocation_string:?} into an argument: {error}")
+                    format!(
+                        "Failed to parse {input:?} from {invocation_string:?} into an argument: {error}",
+                    )
                 }
                 None => {
                     format!("Failed to parse an argument from {invocation_string:?}: {error}")
@@ -474,7 +479,9 @@ async fn try_handle_error<U>(
             );
         }
         other => {
-            warn!("Not prepared to handle unfamiliar kind of error, falling back to default `on_error` function");
+            warn!(
+                "Not prepared to handle unfamiliar kind of error, falling back to default `on_error` function",
+            );
             poise::builtins::on_error(other).await?;
         }
     }

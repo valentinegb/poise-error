@@ -28,12 +28,25 @@ See the [docs] for more information.
 ![Screenshot 2025-01-22 at 6 24 01 PM](https://github.com/user-attachments/assets/bc4cc74a-9a9b-4d2d-ac5f-e7a5f18d9a02)
 
 ```rust
+use poise::{ChoiceParameter, command};
+use poise_error::{
+    UserError,
+    anyhow::{self, anyhow, bail},
+};
+
+#[derive(ChoiceParameter)]
+enum ErrorKind {
+    User,
+    Internal,
+    Panic,
+}
+
 /// Fails intentionally
 #[command(slash_command)]
 async fn error(
-    _ctx: Context<'_>,
+    _ctx: poise_error::Context<'_>,
     #[description = "Kind of error to return"] kind: ErrorKind,
-) -> Result<(), poise_error::anyhow::Error> {
+) -> anyhow::Result<()> {
     match kind {
         ErrorKind::User => bail!(UserError(
             anyhow!("This is an example of a user error")

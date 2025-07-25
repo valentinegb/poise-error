@@ -1,23 +1,36 @@
 //! An opinionated plug-and-play library for error handling in Discord bots made
-//! with [poise].
+//! with [`poise`].
 //!
-//! To get started, see [on_error].
+//! To get started, see [`on_error`].
 //!
 //! # Examples
 //!
-//! [Goober Bot] is a Discord bot which uses `poise_error`, here's how it looks:
+//! [Goober Bot] is a Discord bot which uses [`poise_error`][crate], here's how it looks:
 //!
 //! ![Screenshot 2025-01-22 at 6 23 00 PM](https://github.com/user-attachments/assets/aef54d4b-8cde-4d96-aa06-434598fe1326)
 //!
 //! ![Screenshot 2025-01-22 at 6 24 01 PM](https://github.com/user-attachments/assets/bc4cc74a-9a9b-4d2d-ac5f-e7a5f18d9a02)
 //!
-//! ```ignore
+//! ```
+//! use poise::{ChoiceParameter, command};
+//! use poise_error::{
+//!     UserError,
+//!     anyhow::{self, anyhow, bail},
+//! };
+//!
+//! #[derive(ChoiceParameter)]
+//! enum ErrorKind {
+//!     User,
+//!     Internal,
+//!     Panic,
+//! }
+//!
 //! /// Fails intentionally
 //! #[command(slash_command)]
 //! async fn error(
 //!     _ctx: poise_error::Context<'_>,
 //!     #[description = "Kind of error to return"] kind: ErrorKind,
-//! ) -> Result<(), poise_error::anyhow::Error> {
+//! ) -> anyhow::Result<()> {
 //!     match kind {
 //!         ErrorKind::User => bail!(UserError(
 //!             anyhow!("This is an example of a user error")
@@ -55,7 +68,7 @@ pub type Context<'a, U = ()> = poise::Context<'a, U, anyhow::Error>;
 
 /// An anticipated error made by a user.
 ///
-/// Returning *this* error from a command instead of only [anyhow::Error] will
+/// Returning this error from a command instead of only [`anyhow::Error`] will
 /// present the user with an embed stating that *they* have made an error as
 /// opposed to the bot having made an error.
 ///
@@ -65,7 +78,7 @@ pub type Context<'a, U = ()> = poise::Context<'a, U, anyhow::Error>;
 /// use std::str::FromStr;
 ///
 /// use poise_error::{
-///     anyhow::{bail, Error},
+///     anyhow::{self, bail},
 ///     UserError,
 /// };
 ///
@@ -469,10 +482,10 @@ async fn try_handle_error<U>(
     Ok(())
 }
 
-/// Plug this into your [poise::FrameworkOptions] to let `poise_error` handle
-/// your bot's errors.
+/// Plug this into your [`poise::FrameworkOptions`] to let
+/// [`poise_error`][crate] handle your bot's errors.
 ///
-/// [anyhow::Error] is the error type expected to be returned from commands.
+/// [`anyhow::Error`] is the error type expected to be returned from commands.
 ///
 /// # Examples
 ///

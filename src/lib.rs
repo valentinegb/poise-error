@@ -15,7 +15,7 @@
 //! /// Fails intentionally
 //! #[command(slash_command)]
 //! async fn error(
-//!     _ctx: Context<'_>,
+//!     _ctx: poise_error::Context<'_>,
 //!     #[description = "Kind of error to return"] kind: ErrorKind,
 //! ) -> Result<(), poise_error::anyhow::Error> {
 //!     match kind {
@@ -46,6 +46,13 @@ use tracing::{error, warn};
 
 pub use anyhow;
 
+/// A shorthand for the [`poise::Context`] enum.
+///
+/// The `E` generic is set to [`anyhow::Error`] and the `U` generic is set to
+/// [`()`][unit] by default, though that can be changed (e.g.
+/// `poise_error::Context<'_, MyType>`).
+pub type Context<'a, U = ()> = poise::Context<'a, U, anyhow::Error>;
+
 /// An anticipated error made by a user.
 ///
 /// Returning *this* error from a command instead of only [anyhow::Error] will
@@ -63,7 +70,7 @@ pub use anyhow;
 /// };
 ///
 /// #[poise::command(prefix_command, slash_command)]
-/// async fn command(ctx: poise::Context<'_, (), Error>) -> Result<(), Error> {
+/// async fn command(ctx: poise_error::Context<'_>) -> anyhow::Result<()> {
 ///     bail!(UserError::from_str("You stink!").unwrap())
 /// }
 /// ```

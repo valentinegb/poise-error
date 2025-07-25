@@ -8,11 +8,11 @@ repository = "https://github.com/valentinegb/poise-error"
 license = "MIT"
 
 [dependencies]
-anyhow = "1"
-poise = { version = "0", default-features = false }
-serenity = { version = "0", default-features = false, optional = true }
-thiserror = "2"
-tracing = { version = "0", default-features = false, features = ["std"] }
+anyhow = "1.0.0"
+poise = { version = "0.6.0", default-features = false }
+serenity = { version = "0.12.0", default-features = false, optional = true }
+thiserror = "2.0.0"
+tracing = { version = "0.1.0", default-features = false, features = ["std"] }
 
 [features]
 default = ["serenity/rustls_backend"]

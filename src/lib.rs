@@ -109,7 +109,9 @@ impl FromStr for UserError {
 ///
 /// This function does not retain any error types; all errors in a chain will
 /// be turned into strings.
-fn dedup_error_chain(error: &mut anyhow::Error) {
+///
+/// Used internally by [`poise_error`][crate], see [`try_handle_error`].
+pub fn dedup_error_chain(error: &mut anyhow::Error) {
     let mut chain: Vec<String> = error.chain().map(|err| err.to_string()).collect();
 
     chain.dedup();
@@ -124,7 +126,56 @@ fn dedup_error_chain(error: &mut anyhow::Error) {
     *error = deduped_error;
 }
 
-async fn try_handle_error<U>(
+/// Handles errors given by [`poise`].
+///
+/// Used internally by [`on_error`]. You can use this instead of [`on_error`] if
+/// you would like to extend the functionality of [`poise_error`][crate].
+///
+/// # Examples
+///
+/// ```
+/// use poise::FrameworkError;
+/// use poise_error::{dedup_error_chain, try_handle_error};
+/// # use thiserror::Error;
+/// use tracing::error;
+///
+/// # #[derive(Error, Debug)]
+/// # #[error("this is my special error :)")]
+/// # struct SpecialError;
+/// #
+/// async fn my_custom_error_handler<U>(
+///     error: FrameworkError<'_, U, anyhow::Error>,
+/// ) -> Result<(), anyhow::Error> {
+///     match error {
+///         FrameworkError::CommandCheckFailed {
+///             error: Some(error), ..
+///         } if error.is::<SpecialError>() => {
+///             // Handle special error case
+///         }
+///         other => try_handle_error(other).await?,
+///     }
+///
+///     Ok(())
+/// }
+///
+/// let framework = poise::Framework::builder()
+///     .options(poise::FrameworkOptions {
+///         on_error: |error| {
+///             Box::pin(async move {
+///                 if let Err(mut err) = my_custom_error_handler(error).await {
+///                     dedup_error_chain(&mut err);
+///                     error!("Failed to handle error: {err:#}");
+///                 }
+///             })
+///         },
+///         ..Default::default()
+///     })
+///     .setup(|ctx, _ready, framework| {
+///         Box::pin(async move { Ok(()) })
+///     })
+///     .build();
+/// ```
+pub async fn try_handle_error<U>(
     error: FrameworkError<'_, U, anyhow::Error>,
 ) -> Result<(), anyhow::Error> {
     const MAYBE_BOT_ERROR: &str =
@@ -493,6 +544,8 @@ async fn try_handle_error<U>(
 /// [`poise_error`][crate] handle your bot's errors.
 ///
 /// [`anyhow::Error`] is the error type expected to be returned from commands.
+/// If you would like to handle some errors before allowing
+/// [`poise_error`][crate] to handle any, see [`try_handle_error`].
 ///
 /// # Examples
 ///
@@ -504,9 +557,9 @@ async fn try_handle_error<U>(
 ///         on_error,
 ///         ..Default::default()
 ///     })
-/// #     .setup(|ctx, _ready, framework| {
-/// #         Box::pin(async move { Ok(()) })
-/// #     })
+///     .setup(|ctx, _ready, framework| {
+///         Box::pin(async move { Ok(()) })
+///     })
 ///     .build();
 /// ```
 pub fn on_error<U>(error: FrameworkError<'_, U, anyhow::Error>) -> BoxFuture<'_, ()>

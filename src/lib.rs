@@ -73,7 +73,11 @@ pub type Context<'a, U = ()> = poise::Context<'a, U, anyhow::Error>;
 ///
 /// Returning this error from a command instead of only [`anyhow::Error`] will
 /// present the user with a message stating that *they* have made an error as
-/// opposed to the bot having made an error.
+/// opposed to the bot having made an error. If given a chain of errors, only
+/// the last error in the chain is shown to the user. This error is not encased
+/// in a codeblock like other errors so that you may take advantage of Discord's
+/// formatting. As such, it's recommended you capitalize the first letter of
+/// your error message.
 ///
 /// # Examples
 ///
@@ -87,7 +91,7 @@ pub type Context<'a, U = ()> = poise::Context<'a, U, anyhow::Error>;
 ///
 /// #[poise::command(prefix_command, slash_command)]
 /// async fn command(ctx: poise_error::Context<'_>) -> anyhow::Result<()> {
-///     bail!(UserError::from_str("You stink!").unwrap())
+///     bail!(UserError::from_str("You *stink!*").unwrap())
 /// }
 /// ```
 #[derive(Error, Debug)]
@@ -189,10 +193,11 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
     match error {
         FrameworkError::Command { mut error, ctx, .. } => {
             let invocation_string = ctx.invocation_string();
-            let description = format!("```\n{error:?}\n```");
+            let is_user_error = error.is::<UserError>();
 
-            if error.is::<UserError>() {
-                dedup_error_chain(&mut error);
+            dedup_error_chain(&mut error);
+
+            if is_user_error {
                 ctx.send(
                     CreateReply::default()
                         .flags(MessageFlags::IS_COMPONENTS_V2)
@@ -201,7 +206,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                 CreateComponent::TextDisplay(CreateTextDisplay::new(
                                     "### You seem to have made an error",
                                 )),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(description)),
+                                CreateComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                    "{error}",
+                                ))),
                                 CreateComponent::Separator(CreateSeparator::new(true)),
                                 CreateComponent::TextDisplay(CreateTextDisplay::new(
                                     MAYBE_BOT_ERROR_FOOTER,
@@ -214,7 +221,6 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                 )
                 .await?;
             } else {
-                dedup_error_chain(&mut error);
                 error!("An error occurred whilst executing {invocation_string:?}: {error:#}");
                 ctx.send(
                     CreateReply::default()
@@ -224,7 +230,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                 CreateComponent::TextDisplay(CreateTextDisplay::new(
                                     "### An internal error has occurred",
                                 )),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(description)),
+                                CreateComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                    "```\n{error:?}\n```",
+                                ))),
                                 CreateComponent::Separator(CreateSeparator::new(true)),
                                 CreateComponent::TextDisplay(CreateTextDisplay::new(
                                     BOT_ERROR_FOOTER,

@@ -50,9 +50,13 @@ use std::{convert::Infallible, str::FromStr};
 use poise::{
     BoxFuture, CreateReply, FrameworkError,
     serenity_prelude::{
-        CreateEmbed, CreateEmbedFooter, Mentionable,
+        Mentionable,
         colours::css::{DANGER, WARNING},
     },
+};
+use serenity::{
+    all::{CreateComponent, CreateContainer, CreateSeparator, CreateTextDisplay, MessageFlags},
+    builder::CreateContainerComponent,
 };
 use thiserror::Error;
 use tracing::{error, warn};
@@ -69,7 +73,7 @@ pub type Context<'a, U = ()> = poise::Context<'a, U, anyhow::Error>;
 /// An anticipated error made by a user.
 ///
 /// Returning this error from a command instead of only [`anyhow::Error`] will
-/// present the user with an embed stating that *they* have made an error as
+/// present the user with a message stating that *they* have made an error as
 /// opposed to the bot having made an error.
 ///
 /// # Examples
@@ -178,10 +182,10 @@ pub fn dedup_error_chain(error: &mut anyhow::Error) {
 pub async fn try_handle_error<U: Send + Sync + 'static>(
     error: FrameworkError<'_, U, anyhow::Error>,
 ) -> Result<(), anyhow::Error> {
-    const MAYBE_BOT_ERROR: &str =
-        "If you believe this is an error on the bot's end, please contact a developer.";
-    const BOT_ERROR: &str =
-        "This isn't supposed to happen! If you have the time, please contact a developer.";
+    const MAYBE_BOT_ERROR_FOOTER: &str =
+        "-# If you believe this is an error on the bot's end, please contact a developer.";
+    const BOT_ERROR_FOOTER: &str =
+        "-# This isn't supposed to happen! If you have the time, please contact a developer.";
 
     match error {
         FrameworkError::Command { mut error, ctx, .. } => {
@@ -195,13 +199,24 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             if is_user_error {
                 ctx.send(
                     CreateReply::default()
-                        .embed(
-                            CreateEmbed::new()
-                                .title("You seem to have made an error")
-                                .description(description)
-                                .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
-                                .color(WARNING),
-                        )
+                        .flags(MessageFlags::IS_COMPONENTS_V2)
+                        .components(&[CreateComponent::Container(
+                            CreateContainer::new(&[
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    "### You seem to have made an error",
+                                )),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    description,
+                                )),
+                                CreateContainerComponent::Separator(
+                                    CreateSeparator::new().divider(true),
+                                ),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    MAYBE_BOT_ERROR_FOOTER,
+                                )),
+                            ])
+                            .accent_color(WARNING),
+                        )])
                         .reply(true)
                         .ephemeral(true),
                 )
@@ -210,13 +225,24 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                 error!("An error occurred whilst executing {invocation_string:?}: {error:#}");
                 ctx.send(
                     CreateReply::default()
-                        .embed(
-                            CreateEmbed::new()
-                                .title("An internal error has occurred")
-                                .description(description)
-                                .footer(CreateEmbedFooter::new(BOT_ERROR))
-                                .color(DANGER),
-                        )
+                        .flags(MessageFlags::IS_COMPONENTS_V2)
+                        .components(&[CreateComponent::Container(
+                            CreateContainer::new(&[
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    "### An internal error has occurred",
+                                )),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    description,
+                                )),
+                                CreateContainerComponent::Separator(
+                                    CreateSeparator::new().divider(true),
+                                ),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    BOT_ERROR_FOOTER,
+                                )),
+                            ])
+                            .accent_color(DANGER),
+                        )])
                         .reply(true)
                         .ephemeral(true),
                 )
@@ -233,10 +259,13 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
 
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Subcommand required")
-                            .description(format!(
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Subcommand required",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
                                 "You must specify one of the following subcommands:\n\n{}",
                                 ctx.command()
                                     .subcommands
@@ -251,9 +280,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                     })
                                     .collect::<Vec<_>>()
                                     .join("\n"),
-                            ))
-                            .color(WARNING),
-                    )
+                            ))),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -262,12 +292,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
         FrameworkError::CommandPanic { ctx, .. } => {
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Panicked")
-                            .description("A really bad error happened and the bot panicked! You should contact a bot developer and tell them to check the logs.")
-                            .color(DANGER),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Panicked",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "A really bad error happened and the bot panicked! You should contact a bot developer and tell them to check the logs.",
+                            )),
+                        ])
+                        .accent_color(DANGER),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -291,13 +327,24 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             warn!("{description}");
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Failed to parse argument")
-                            .description(description)
-                            .footer(CreateEmbedFooter::new(MAYBE_BOT_ERROR))
-                            .color(WARNING),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Failed to parse argument",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                description,
+                            )),
+                            CreateContainerComponent::Separator(
+                                CreateSeparator::new().divider(true),
+                            ),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                MAYBE_BOT_ERROR_FOOTER,
+                            )),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -312,13 +359,24 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             );
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Command structure mismatch")
-                            .description(format!("```\n{description}\n```"))
-                            .footer(CreateEmbedFooter::new(BOT_ERROR))
-                            .color(DANGER),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Command structure mismatch",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                "```\n{description}\n```"
+                            ))),
+                            CreateContainerComponent::Separator(
+                                CreateSeparator::new().divider(true),
+                            ),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                BOT_ERROR_FOOTER,
+                            )),
+                        ])
+                        .accent_color(DANGER),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -332,12 +390,19 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             warn!("User hit cooldown with {:?}", ctx.invocation_string());
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Cooldown hit")
-                            .description(format!("You must wait **~{} seconds** before you can use this command again.", remaining_cooldown.as_secs()))
-                            .color(WARNING),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Cooldown hit",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                "You must wait **~{} seconds** before you can use this command again.",
+                                remaining_cooldown.as_secs(),
+                            ))),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -354,12 +419,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             );
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Lacking bot permissions")
-                            .description(format!("The bot requires the following permissions to execute this command: **{missing_permissions}**"))
-                            .color(WARNING),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Lacking bot permissions",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                "The bot requires the following permissions to execute this command: **{missing_permissions}**",
+                            ))),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -377,12 +448,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                 );
                 ctx.send(
                     CreateReply::default()
-                        .embed(
-                            CreateEmbed::new()
-                                .title("Lacking user permissions")
-                                .description(format!("You must have the following permissions to execute this command: **{missing_permissions}**"))
-                                .color(WARNING),
-                        )
+                        .flags(MessageFlags::IS_COMPONENTS_V2)
+                        .components(&[CreateComponent::Container(
+                            CreateContainer::new(&[
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    "### Lacking user permissions",
+                                )),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                    "You must have the following permissions to execute this command: **{missing_permissions}**",
+                                ))),
+                            ])
+                            .accent_color(WARNING),
+                        )])
                         .reply(true)
                         .ephemeral(true),
                 )
@@ -395,12 +472,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                 );
                 ctx.send(
                     CreateReply::default()
-                        .embed(
-                            CreateEmbed::new()
-                                .title("Lacking user permissions")
-                                .description("You do not have the permissions needed to execute this command")
-                                .color(WARNING),
-                        )
+                        .flags(MessageFlags::IS_COMPONENTS_V2)
+                        .components(&[CreateComponent::Container(
+                            CreateContainer::new(&[
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    "### Lacking user permissions",
+                                )),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    "You do not have the permissions needed to execute this command",
+                                )),
+                            ])
+                            .accent_color(WARNING),
+                        )])
                         .reply(true)
                         .ephemeral(true),
                 )
@@ -414,13 +497,24 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             );
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Failed to fetch permissions")
-                            .description("The bot was unable to verify that either the bot itself or the user have the necessary permissions to execute this command.")
-                            .footer(CreateEmbedFooter::new(BOT_ERROR))
-                            .color(DANGER),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Failed to fetch permissions",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "The bot was unable to verify that either the bot itself or the user have the necessary permissions to execute this command.",
+                            )),
+                            CreateContainerComponent::Separator(
+                                CreateSeparator::new().divider(true),
+                            ),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                BOT_ERROR_FOOTER,
+                            )),
+                        ])
+                        .accent_color(DANGER)
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -433,12 +527,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             );
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Owner only command")
-                            .description("You must be an owner to use this command.")
-                            .color(WARNING),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Owner only command",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "You must be an owner to use this command.",
+                            )),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -451,12 +551,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             );
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("Server only command")
-                            .description("You cannot use this command outside of a server.")
-                            .color(WARNING),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### Server only command",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "You cannot use this command outside of a server.",
+                            )),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -469,12 +575,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             );
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("DMs only command")
-                            .description("You cannot use this command outside of DMs.")
-                            .color(WARNING),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### DMs only command",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "You cannot use this command outside of DMs.",
+                            )),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -487,12 +599,18 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
             );
             ctx.send(
                 CreateReply::default()
-                    .embed(
-                        CreateEmbed::new()
-                            .title("NSFW command")
-                            .description("You cannot use this command outside of an NSFW channel.")
-                            .color(WARNING),
-                    )
+                    .flags(MessageFlags::IS_COMPONENTS_V2)
+                    .components(&[CreateComponent::Container(
+                        CreateContainer::new(&[
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "### NSFW command",
+                            )),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "You cannot use this command outside of an NSFW channel.",
+                            )),
+                        ])
+                        .accent_color(WARNING),
+                    )])
                     .reply(true)
                     .ephemeral(true),
             )
@@ -504,13 +622,24 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                 error!("Check errored for {:?}: {error:#}", ctx.invocation_string());
                 ctx.send(
                     CreateReply::default()
-                        .embed(
-                            CreateEmbed::new()
-                                .title("Failed to perform check")
-                                .description(format!("```\n{error:?}\n```"))
-                                .footer(CreateEmbedFooter::new(BOT_ERROR))
-                                .color(DANGER),
-                        )
+                        .flags(MessageFlags::IS_COMPONENTS_V2)
+                        .components(&[CreateComponent::Container(
+                            CreateContainer::new(&[
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    "### Failed to perform check",
+                                )),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    format!("```\n{error:?}\n```"),
+                                )),
+                                CreateContainerComponent::Separator(
+                                    CreateSeparator::new().divider(true),
+                                ),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    BOT_ERROR_FOOTER,
+                                )),
+                            ])
+                            .accent_color(DANGER),
+                        )])
                         .reply(true)
                         .ephemeral(true),
                 )

@@ -203,7 +203,6 @@ pub async fn try_handle_error<U>(
 
             if error.is::<UserError>() {
                 dedup_error_chain(&mut error);
-                warn!("User made an error when invoking {invocation_string:?}: {error:#}");
                 ctx.send(
                     CreateReply::default()
                         .embed(

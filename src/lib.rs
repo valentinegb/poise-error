@@ -55,7 +55,8 @@ use poise::{
     },
 };
 use serenity::all::{
-    CreateComponent, CreateContainer, CreateSeparator, CreateTextDisplay, MessageFlags,
+    CreateAllowedMentions, CreateComponent, CreateContainer, CreateSeparator, CreateTextDisplay,
+    MessageFlags,
 };
 use thiserror::Error;
 use tracing::{error, warn};
@@ -217,7 +218,8 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                             .accent_color(WARNING),
                         )])
                         .reply(true)
-                        .ephemeral(true),
+                        .ephemeral(true)
+                        .allowed_mentions(CreateAllowedMentions::new()),
                 )
                 .await?;
             } else {

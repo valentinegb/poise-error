@@ -199,10 +199,13 @@ pub async fn try_handle_error<U>(
         }
         FrameworkError::Command { mut error, ctx, .. } => {
             let invocation_string = ctx.invocation_string();
+            let is_user_error = error.is::<UserError>();
+
+            dedup_error_chain(&mut error);
+
             let description = format!("```\n{error:?}\n```");
 
-            if error.is::<UserError>() {
-                dedup_error_chain(&mut error);
+            if is_user_error {
                 ctx.send(
                     CreateReply::default()
                         .embed(
@@ -217,7 +220,6 @@ pub async fn try_handle_error<U>(
                 )
                 .await?;
             } else {
-                dedup_error_chain(&mut error);
                 error!("An error occurred whilst executing {invocation_string:?}: {error:#}");
                 ctx.send(
                     CreateReply::default()

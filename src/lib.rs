@@ -55,8 +55,8 @@ use poise::{
     },
 };
 use serenity::all::{
-    CreateAllowedMentions, CreateComponent, CreateContainer, CreateSeparator, CreateTextDisplay,
-    MessageFlags,
+    CreateAllowedMentions, CreateComponent, CreateContainer, CreateContainerComponent,
+    CreateSeparator, CreateTextDisplay, MessageFlags,
 };
 use thiserror::Error;
 use tracing::{error, warn};
@@ -204,14 +204,14 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                         .flags(MessageFlags::IS_COMPONENTS_V2)
                         .components(&[CreateComponent::Container(
                             CreateContainer::new(&[
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     "### You seem to have made an error",
                                 )),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(format!(
-                                    "{error}",
-                                ))),
-                                CreateComponent::Separator(CreateSeparator::new(true)),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    format!("{error}",),
+                                )),
+                                CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     MAYBE_BOT_ERROR_FOOTER,
                                 )),
                             ])
@@ -229,14 +229,14 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                         .flags(MessageFlags::IS_COMPONENTS_V2)
                         .components(&[CreateComponent::Container(
                             CreateContainer::new(&[
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     "### An internal error has occurred",
                                 )),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(format!(
-                                    "```\n{error:?}\n```",
-                                ))),
-                                CreateComponent::Separator(CreateSeparator::new(true)),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    format!("```\n{error:?}\n```",),
+                                )),
+                                CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     BOT_ERROR_FOOTER,
                                 )),
                             ])
@@ -261,10 +261,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Subcommand required",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(format!(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
                                 "You must specify one of the following subcommands:\n\n{}",
                                 ctx.command()
                                     .subcommands
@@ -294,10 +294,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Panicked",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new("A really bad error happened and the bot panicked! You should contact a bot developer and tell them to check the logs.")),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new("A really bad error happened and the bot panicked! You should contact a bot developer and tell them to check the logs.")),
                         ])
                         .accent_color(DANGER),
                     )])
@@ -327,12 +327,14 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Failed to parse argument",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(description)),
-                            CreateComponent::Separator(CreateSeparator::new(true)),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                description,
+                            )),
+                            CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 MAYBE_BOT_ERROR_FOOTER,
                             )),
                         ])
@@ -355,14 +357,16 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Command structure mismatch",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(format!(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
                                 "```\n{description}\n```"
                             ))),
-                            CreateComponent::Separator(CreateSeparator::new(true)),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(BOT_ERROR_FOOTER)),
+                            CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                BOT_ERROR_FOOTER,
+                            )),
                         ])
                         .accent_color(DANGER),
                     )])
@@ -382,10 +386,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Cooldown hit",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(format!("You must wait **~{} seconds** before you can use this command again.", remaining_cooldown.as_secs()))),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!("You must wait **~{} seconds** before you can use this command again.", remaining_cooldown.as_secs()))),
                         ])
                         .accent_color(WARNING),
                     )])
@@ -408,10 +412,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Lacking bot permissions",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(format!("The bot requires the following permissions to execute this command: **{missing_permissions}**"))),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!("The bot requires the following permissions to execute this command: **{missing_permissions}**"))),
                         ])
                         .accent_color(WARNING),
                     )])
@@ -435,10 +439,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                         .flags(MessageFlags::IS_COMPONENTS_V2)
                         .components(&[CreateComponent::Container(
                             CreateContainer::new(&[
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     "### Lacking user permissions",
                                 )),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(format!("You must have the following permissions to execute this command: **{missing_permissions}**"))),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!("You must have the following permissions to execute this command: **{missing_permissions}**"))),
                             ])
                             .accent_color(WARNING),
                         )])
@@ -457,10 +461,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                         .flags(MessageFlags::IS_COMPONENTS_V2)
                         .components(&[CreateComponent::Container(
                             CreateContainer::new(&[
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     "### Lacking user permissions",
                                 )),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new("You do not have the permissions needed to execute this command")),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new("You do not have the permissions needed to execute this command")),
                             ])
                             .accent_color(WARNING),
                         )])
@@ -480,10 +484,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Owner only command",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "You must be an owner to use this command.",
                             )),
                         ])
@@ -504,10 +508,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Server only command",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "You cannot use this command outside of a server.",
                             )),
                         ])
@@ -528,10 +532,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### DMs only command",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "You cannot use this command outside of DMs.",
                             )),
                         ])
@@ -552,10 +556,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### NSFW command",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "You cannot use this command outside of an NSFW channel.",
                             )),
                         ])
@@ -575,14 +579,14 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                         .flags(MessageFlags::IS_COMPONENTS_V2)
                         .components(&[CreateComponent::Container(
                             CreateContainer::new(&[
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     "### Failed to perform check",
                                 )),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(format!(
-                                    "```\n{error:?}\n```",
-                                ))),
-                                CreateComponent::Separator(CreateSeparator::new(true)),
-                                CreateComponent::TextDisplay(CreateTextDisplay::new(
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    format!("```\n{error:?}\n```",),
+                                )),
+                                CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     BOT_ERROR_FOOTER,
                                 )),
                             ])
@@ -621,12 +625,12 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                     .flags(MessageFlags::IS_COMPONENTS_V2)
                     .components(&[CreateComponent::Container(
                         CreateContainer::new(&[
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Failed to fetch permissions",
                             )),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new("The bot attempted to fetch permissions for you or for the bot, but failed to do so.")),
-                            CreateComponent::Separator(CreateSeparator::new(true)),
-                            CreateComponent::TextDisplay(CreateTextDisplay::new(
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new("The bot attempted to fetch permissions for you or for the bot, but failed to do so.")),
+                            CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 BOT_ERROR_FOOTER,
                             )),
                         ])

@@ -54,12 +54,9 @@ use poise::{
         colours::css::{DANGER, WARNING},
     },
 };
-use serenity::{
-    all::{
-        CreateAllowedMentions, CreateComponent, CreateContainer, CreateSeparator,
-        CreateTextDisplay, MessageFlags,
-    },
-    builder::CreateContainerComponent,
+use serenity::all::{
+    CreateAllowedMentions, CreateComponent, CreateContainer, CreateContainerComponent,
+    CreateSeparator, CreateTextDisplay, MessageFlags,
 };
 use thiserror::Error;
 use tracing::{error, warn};

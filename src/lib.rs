@@ -208,7 +208,7 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                     "### You seem to have made an error",
                                 )),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
-                                    format!("{error}",),
+                                    format!("{error}"),
                                 )),
                                 CreateContainerComponent::Separator(CreateSeparator::new(true)),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
@@ -233,7 +233,7 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                     "### An internal error has occurred",
                                 )),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
-                                    format!("```\n{error:?}\n```",),
+                                    format!("```\n{error:?}\n```"),
                                 )),
                                 CreateContainerComponent::Separator(CreateSeparator::new(true)),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
@@ -583,7 +583,7 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                     "### Failed to perform check",
                                 )),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
-                                    format!("```\n{error:?}\n```",),
+                                    format!("```\n{error:?}\n```"),
                                 )),
                                 CreateContainerComponent::Separator(CreateSeparator::new(true)),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(

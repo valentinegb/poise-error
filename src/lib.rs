@@ -210,7 +210,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     format!("{error}"),
                                 )),
-                                CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                                CreateContainerComponent::Separator(
+                                    CreateSeparator::new().divider(true),
+                                ),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     MAYBE_BOT_ERROR_FOOTER,
                                 )),
@@ -235,7 +237,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     format!("```\n{error:?}\n```"),
                                 )),
-                                CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                                CreateContainerComponent::Separator(
+                                    CreateSeparator::new().divider(true),
+                                ),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     BOT_ERROR_FOOTER,
                                 )),
@@ -297,7 +301,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Panicked",
                             )),
-                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new("A really bad error happened and the bot panicked! You should contact a bot developer and tell them to check the logs.")),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "A really bad error happened and the bot panicked! You should contact a bot developer and tell them to check the logs.",
+                            )),
                         ])
                         .accent_color(DANGER),
                     )])
@@ -333,7 +339,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 description,
                             )),
-                            CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                            CreateContainerComponent::Separator(
+                                CreateSeparator::new().divider(true),
+                            ),
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 MAYBE_BOT_ERROR_FOOTER,
                             )),
@@ -363,7 +371,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
                                 "```\n{description}\n```"
                             ))),
-                            CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                            CreateContainerComponent::Separator(
+                                CreateSeparator::new().divider(true),
+                            ),
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 BOT_ERROR_FOOTER,
                             )),
@@ -389,7 +399,10 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Cooldown hit",
                             )),
-                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!("You must wait **~{} seconds** before you can use this command again.", remaining_cooldown.as_secs()))),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                "You must wait **~{} seconds** before you can use this command again.",
+                                remaining_cooldown.as_secs()
+                            ))),
                         ])
                         .accent_color(WARNING),
                     )])
@@ -415,7 +428,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Lacking bot permissions",
                             )),
-                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!("The bot requires the following permissions to execute this command: **{missing_permissions}**"))),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!(
+                                "The bot requires the following permissions to execute this command: **{missing_permissions}**"
+                            ))),
                         ])
                         .accent_color(WARNING),
                     )])
@@ -442,7 +457,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     "### Lacking user permissions",
                                 )),
-                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(format!("You must have the following permissions to execute this command: **{missing_permissions}**"))),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    format!("You must have the following permissions to execute this command: **{missing_permissions}**"),
+                                )),
                             ])
                             .accent_color(WARNING),
                         )])
@@ -464,7 +481,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     "### Lacking user permissions",
                                 )),
-                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new("You do not have the permissions needed to execute this command")),
+                                CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                    "You do not have the permissions needed to execute this command",
+                                )),
                             ])
                             .accent_color(WARNING),
                         )])
@@ -585,7 +604,9 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     format!("```\n{error:?}\n```"),
                                 )),
-                                CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                                CreateContainerComponent::Separator(
+                                    CreateSeparator::new().divider(true),
+                                ),
                                 CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                     BOT_ERROR_FOOTER,
                                 )),
@@ -628,8 +649,12 @@ pub async fn try_handle_error<U: Send + Sync + 'static>(
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 "### Failed to fetch permissions",
                             )),
-                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new("The bot attempted to fetch permissions for you or for the bot, but failed to do so.")),
-                            CreateContainerComponent::Separator(CreateSeparator::new(true)),
+                            CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
+                                "The bot attempted to fetch permissions for you or for the bot, but failed to do so.",
+                            )),
+                            CreateContainerComponent::Separator(
+                                CreateSeparator::new().divider(true),
+                            ),
                             CreateContainerComponent::TextDisplay(CreateTextDisplay::new(
                                 BOT_ERROR_FOOTER,
                             )),

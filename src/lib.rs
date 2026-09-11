@@ -255,7 +255,8 @@ pub async fn try_handle_error<U>(
                                     .subcommands
                                     .iter()
                                     .map(|subcommand| {
-                                        if prefix == ctx.framework().bot_id.mention().to_string() {
+                                        if prefix == ctx.framework().bot_id().mention().to_string()
+                                        {
                                             format!("- {prefix} `{}`", subcommand.qualified_name)
                                         } else {
                                             format!("- `{prefix}{}`", subcommand.qualified_name)

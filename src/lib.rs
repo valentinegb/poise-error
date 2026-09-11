@@ -320,7 +320,7 @@ pub async fn try_handle_error<U>(
         } => {
             error!(
                 "Mismatch between registered command and poise command for `/{}`: {description}",
-                ctx.command.qualified_name,
+                ctx.invoked_command_name(),
             );
             ctx.send(
                 CreateReply::default()
@@ -419,6 +419,25 @@ pub async fn try_handle_error<U>(
                 .await?;
             }
         },
+        FrameworkError::PermissionFetchFailed { ctx, .. } => {
+            error!(
+                "Failed to fetch permissions before executing command {:?}",
+                ctx.invocation_string(),
+            );
+            ctx.send(
+                CreateReply::default()
+                    .embed(
+                        CreateEmbed::new()
+                            .title("Failed to fetch permissions")
+                            .description("The bot was unable to verify that either the bot itself or the user have the necessary permissions to execute this command.")
+                            .footer(CreateEmbedFooter::new(BOT_ERROR))
+                            .color(DANGER),
+                    )
+                    .reply(true)
+                    .ephemeral(true),
+            )
+            .await?;
+        }
         FrameworkError::NotAnOwner { ctx, .. } => {
             warn!(
                 "Non owner attempted to invoke {:?}",
@@ -515,20 +534,31 @@ pub async fn try_handle_error<U>(
         },
         FrameworkError::DynamicPrefix { mut error, msg, .. } => {
             dedup_error_chain(&mut error);
-            error!("Dynamic prefix failed for {msg:?}: {error:#}");
+            error!("Dynamic prefix failed for {:?}: {error:#}", msg.content);
         }
         FrameworkError::UnknownCommand {
-            prefix,
-            msg_content,
-            ..
+            msg, content_start, ..
         } => {
-            warn!("Recognized prefix {prefix:?} but did not recognize command {msg_content:?}");
+            let content_start = content_start as usize;
+
+            warn!(
+                "Recognized prefix {:?} but did not recognize command {:?}",
+                &msg.content[..content_start],
+                &msg.content[content_start..],
+            );
         }
         FrameworkError::UnknownInteraction { interaction, .. } => {
             warn!(
                 "Received interaction for an unknown command: {:?}",
                 interaction.data.name,
             );
+        }
+        FrameworkError::NonCommandMessage { mut error, msg, .. } => {
+            dedup_error_chain(&mut error);
+            error!(
+                "Error occurred in callback for non-command message {:?}: {error:#}",
+                msg.content,
+            )
         }
         other => {
             warn!(
